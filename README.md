@@ -2,7 +2,7 @@
 
 Small script to convert midi files into FoxDot code (A python live coding framework) to generate covers through python commands.
 
-You can see an example here.
+You can see a demo on this youtube video:
 
 [![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/fCMHcZfPvDA/0.jpg)](https://www.youtube.com/watch?v=fCMHcZfPvDA)
 
