@@ -168,7 +168,7 @@ def a28():
 	d3 >> pluck([(-25,), (-23, -25), (-25,), (-23, -25), (-60,)],dur=[1.0, 1.0, 1.0, 1.0, 4.0],amp=[1, 1, 1, 1, 0])
 Clock.clear()
 
-start = Clock.mod(4)
+start = Clock.mod(16)
 Clock.schedule(a0, start + 0)
 Clock.schedule(a1, start + 8)
 Clock.schedule(a2, start + 16)
