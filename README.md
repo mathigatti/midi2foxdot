@@ -22,5 +22,4 @@ python midi2code.py INPUT_MIDI
 python midi2code.py midis/bad_guy.mid
 ```
 
-### Possible problems
-Sometimes different instruments might not be synched, usually changing the 4 in `start = Clock.mod(4)` with some other multiple of 4 like 8, 12 or 16 fixes the problem. I'm not sure why it happens, It's something I still need to fix.
+The generated code divides the song into pieces with a duration of 8 beats in order to make it easier to modify and read the code. You can change the variables `notePerCompass` and `nCompass` at `midi2code.py` to change the duration of each part (8 beats by default) and the number of parts extracted from the song (30 by default).

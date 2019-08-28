@@ -182,7 +182,7 @@ def main(midiFile):
             for instrument_i in compass:
                 text += instrument_i
     text += "Clock.clear()\n"
-    text += "\nstart = Clock.mod(4)\n".format(notePerCompass-4,notePerCompass)
+    text += "\nstart = Clock.mod({}) - 0.1\n".format(notePerCompass)
     for i in range(len(final_compas)):
             text += "Clock.schedule(a{}, start + {})\n".format(i,notePerCompass*i)
 
