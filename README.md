@@ -1,4 +1,4 @@
-# midi2code: Coding Billie Eilish - Bad Guy
+# midi2code
 
 Small script to convert midi files into FoxDot code (A python live coding framework) to generate covers through python commands.
 
