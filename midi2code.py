@@ -130,8 +130,21 @@ def intoCompasses(notes,dur,amps,notePerCompass, nCompass):
     print(list(map(sum,dur_comp)))
     return notes_comp,dur_comp,amps_comp
 
+def choosePlayer(notas):
+	players = {(-100,10):"viola",(10,100):"charm"}
+	max_note = max(list([min(n) for n in notas]))
+	min_note = max(list([max(n) for n in notas]))
+
+	notes = list(players.keys())
+
+	j = 0
+	for min_note_i,max_note_i in players:
+		if min_note_i <= min_note and max_note_i >= max_note:
+			return players[(min_note_i,max_note_i)]
+	raise Exception
 
 def main(midiFile):
+
 
     mid = converter.parse(midiFile)
 
@@ -169,7 +182,7 @@ def main(midiFile):
                 amps = final_v[3]
                 notes_comp, dur_comp, amps_comp = intoCompasses(notes,dur,amps,notePerCompass,nCompass)
                 for j in range(len(notes_comp)):
-                    final_compas[j].append("\td{} >> pluck({},dur={},amp={})\n".format(u,notes_comp[j],dur_comp[j],amps_comp[j]))
+                    final_compas[j].append("\td{} >> {}({},dur={},amp={})\n".format(u,choosePlayer(notes_comp[j]),notes_comp[j],dur_comp[j],amps_comp[j]))
                 u += 1
         i+=1
 
@@ -178,6 +191,7 @@ def main(midiFile):
     for compass in final_compas:
             text += "@structure\n"
             text += "def a{}():\n".format(i)
+            text += f"\tprint('Ejecutando parte {i}')\n"
             i+=1
             for instrument_i in compass:
                 text += instrument_i
