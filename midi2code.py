@@ -20,28 +20,15 @@ def midi2note(n):
 def midiNotes2notes(notes):
     return [tuple(map(lambda x:midi2note(x),list(note))) for note in notes]
 
-def get_notes(notes_to_parse):
+from magenta.models.gansynth.lib import generate_util as gu
 
-    """ Get all the notes and chords from the midi files in the ./midi_songs directory """
-    amps = []
-    durations = []
-    notes = []
-    start = []
+def get_notes(midi_path):
+    a,b = gu.load_midi(midi_path)
 
-    for element in notes_to_parse:
-        if isinstance(element, note.Note):
-            start.append(element.offset)
-            notes.append((extractNote(element),))
-            durations.append(extractDuration(element))
-            amps.append(extractAmplitude(element))
-                
-        elif isinstance(element, chord.Chord):
-            start.append(element.offset)
-            durations.append(extractDuration(element))
-            amps.append(extractAmplitude(element))
-            notes.append(tuple([extractNote(n) for n in element.notes]))
-
-    return start, notes, durations, amps
+    durations = list(b["end_times"] - b["start_times"])
+    notes = list(map(lambda x : tuple((int(x),)),b["pitches"]))
+    start = list(b["start_times"])
+    return start, notes, durations, [1]*len(notes)
 
 def findFreeSpace(note_start,last_ends):
     #print(note_start, last_ends)
@@ -50,19 +37,17 @@ def findFreeSpace(note_start,last_ends):
             return k
     return -1
     
-def notesProcessing(values,notePerCompass, nCompass):
-    length = notePerCompass*nCompass
-
+def notesProcessing(values,start,length):
     notes_info = list(zip(values[0],values[1],values[2],values[3]))
     #notes_info = sorted(notes_info, key=lambda x : x[0])
-    notes_info = sorted(list(filter(lambda x : x[0] + 4 < length, notes_info)), key=lambda x : x[0])
+    notes_info = sorted(list(filter(lambda x : (start <= x[0]) and (x[0] + 4 < start + length), notes_info)), key=lambda x : x[0])
     
     notes_per_beat = {str(k): [] for k in map(lambda x : x[0], notes_info)}
 
     for note in notes_info:
         notes_per_beat[str(note[0])].append(note)
 
-    notes_at_the_same_time = max(map(len,notes_per_beat.values()))
+    notes_at_the_same_time = 30
     print(notes_at_the_same_time)
     final_notes = []
     final_durs = []
@@ -85,7 +70,10 @@ def notesProcessing(values,notePerCompass, nCompass):
 
                 start.append(note_data[0])
                 notes.append(note_data[1])
-                durations.append(note_data[2])
+                if note_data[0] + note_data[2] > length: 
+                    durations.append(length-note_data[0])
+                else:
+                    durations.append(note_data[2])
                 amps.append(note_data[3])
 
                 if note_data[0] + note_data[2] > last_end:
@@ -98,78 +86,39 @@ def notesProcessing(values,notePerCompass, nCompass):
             notes.append((0,))
             durations.append(length - sum(durations))
             amps.append(0)
-            
-    return final_data
 
-def intoCompasses(notes,dur,amps,notePerCompass, nCompass):
-    notes_comp = []
-    dur_comp = []
-    amps_comp = []
-    
-    i = 0
-    j = 0
-    while j < len(dur):
-        if sum(dur[i:j]) == notePerCompass:
-            notes_comp.append(notes[i:j])
-            dur_comp.append(dur[i:j])
-            amps_comp.append(amps[i:j])
-            i = j
+    final_data2 = {}
+    for k,v in final_data.items():
+        if len(v[0]) > 1:
+            final_data2[k] = v
 
-        if sum(dur[i:j]) > notePerCompass:
-            notes_comp.append(notes[i:j])
-            dur_comp.append(dur[i:j-1] + [notePerCompass-sum(dur[i:j-1])])
-            amps_comp.append(amps[i:j])
-            
-            notes = notes[:j] + [notes[j-1]] + notes[j:]
-            amps = amps[:j] + [amps[j-1]] + amps[j:]
-            dur = dur[:j] + [(sum(dur[i:j]) - notePerCompass)] + dur[j:]
+    return final_data2
 
-            i = j
-            
-        j+=1
-    print(list(map(sum,dur_comp)))
-    return notes_comp,dur_comp,amps_comp
-
-
-def main(midiFile):
-
-    mid = converter.parse(midiFile)
-
-    instruments = instrument.partitionByInstrument(mid)
+def main(midiFile,output_file,start,length):
 
     data = {}
-    i = 0
-
-    for instrument_i in instruments.parts:
-        notes_to_parse = instrument_i.recurse()
-
-        if instrument_i.partName is None:
-            data["instrument_{}".format(i)] = get_notes(notes_to_parse)
-            i+=1
-        else:
-            data[instrument_i.partName] = get_notes(notes_to_parse)
+    data["piano"] = get_notes(midiFile)
 
 
-    with open('base_file.py','r') as f:
+    with open('/home/mathi/Escritorio/midi2code/base_file.py','r') as f:
         text = f.read()
 
-    notePerCompass = 8
-    nCompass = 30
+    letters = ["j","k","l"]
+
     i = 0
     u = 0
-    final_compas = [[] for _ in range(nCompass)]
+    final_compas = [[]]
     for k, v in data.items():
         if len(v[0]) > 0 and len(v[1]) > 0:
             values = list(data.values())
             values_i = values[i]
-            final_data = notesProcessing(values_i,notePerCompass,nCompass)
+            final_data = notesProcessing(values_i,start,length)
             for final_v in final_data.values():
                 notes = midiNotes2notes(final_v[1])
                 dur = final_v[2]
                 amps = final_v[3]
-                notes_comp, dur_comp, amps_comp = intoCompasses(notes,dur,amps,notePerCompass,nCompass)
-                for j in range(len(notes_comp)):
-                    final_compas[j].append("\td{} >> pluck({},dur={},amp={})\n".format(u,notes_comp[j],dur_comp[j],amps_comp[j]))
+                letter = letters[int(u/10)]
+                final_compas[0].append(f"\t{letter}{u%10} >> piano({notes},dur={dur},amp={amps},scale=list(range(12)))\n")
                 u += 1
         i+=1
 
@@ -177,20 +126,19 @@ def main(midiFile):
     i = 0
     for compass in final_compas:
             text += "@structure\n"
-            text += "def a{}():\n".format(i)
+            text += "def parte{}():\n".format(i)
             i+=1
             for instrument_i in compass:
                 text += instrument_i
-    text += "Clock.clear()\n"
-    text += "\nstart = Clock.mod({}) - 0.1\n".format(notePerCompass)
+    text += "\ndef run():\n\tstart = Clock.mod({}) - 0.1\n".format(8)
     for i in range(len(final_compas)):
-            text += "Clock.schedule(a{}, start + {})\n".format(i,notePerCompass*i)
+            text += "\tClock.schedule(parte{}, start + {})\n".format(i,8*i)
 
-    text += "Clock.schedule(lambda : Clock.clear(), start + {})\n".format(notePerCompass*(i+1))
-
-    outputFile = midiFile.split("/")[-1].replace(".mid",".py")
-
-    with open(outputFile,'w') as f:
+    with open(output_file,'w') as f:
         f.write(text)
 
-main(sys.argv[1])
+file_path = sys.argv[1]
+start = int(sys.argv[2])
+length = int(sys.argv[3])
+
+main(file_path,"/home/mathi/Escritorio/midi2code/foxdot.txt",start,length)
