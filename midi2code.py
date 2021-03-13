@@ -100,7 +100,7 @@ def main(midiFile,output_file,start,length):
     data["piano"] = get_notes(midiFile)
 
 
-    with open('/home/mathi/Escritorio/midi2code/base_file.py','r') as f:
+    with open('base_file.py','r') as f:
         text = f.read()
 
     letters = ["j","k","l"]
