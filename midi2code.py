@@ -141,4 +141,6 @@ file_path = sys.argv[1]
 start = int(sys.argv[2])
 length = int(sys.argv[3])
 
-main(file_path,"/home/mathi/Escritorio/midi2code/foxdot.txt",start,length)
+outputFile = file_path.split("/")[-1].replace(".mid",".py")
+
+main(file_path, outputFile, start, length)
